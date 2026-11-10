@@ -34,9 +34,51 @@ def init(vapid_path, subject, db_hooks):
     """db_hooks: objeto con subs(user_id)->[dict], drop(sub_id), role(user_id)->str, fcm_account()->dict|None"""
     _cfg['db'] = db_hooks
     _cfg['subject'] = subject
-    if webpush.AVAILABLE:
-        _cfg['vapid'] = webpush.Vapid(vapid_path)
-    threading.Thread(target=_worker, daemon=True, name='push').start()
+    try:
+        import webpush
+        has_webpush = True
+    except ImportError:
+        has_webpush = False
+
+    if has_webpush:
+        # El resto ddef init(vapid_path, vapid_subject, db):
+    global VAPID_PRIVATE_KEY, VAPID_CLAIMS, PUSH_DB
+    PUSH_DB = db
+    
+    # Verificar si webpush está disponible de forma segura
+    try:
+        import webpush
+        has_webpush = True
+    except ImportError:
+        has_webpush = False
+
+    if not has_webpush:
+        print(">> Advertencia: Libreria webpush no disponible o incompatible.")
+        return
+
+    # Cargar o generar clave VAPID
+    import os
+    from cryptography.hazmat.primitives.asymmetric import ec
+    from cryptography.hazmat.primitives import serialization
+
+    if os.path.exists(vapid_path):
+        with open(vapid_path, "rb") as f:
+            pem_data = f.read()
+    else:
+        # Generar nueva clave si no existe
+        private_key = ec.generate_private_key(ec.SECP256R1())
+        pem_data = private_key.private_bytes(
+            encoding=serialization.Encoding.PEM,
+            format=serialization.PrivateFormat.PKCS8,
+            encryption_algorithm=serialization.NoEncryption()
+        )
+        os.makedirs(os.path.dirname(vapid_path), exist_ok=True)
+        with open(vapid_path, "wb") as f:
+            f.write(pem_data)
+
+    VAPID_PRIVATE_KEY = pem_data.decode('utf-8')
+    VAPID_CLAIMS = {"sub": vapid_subject}
+    print(">> Sistema de notificaciones Push inicializado correctamente.")el código que tenías dentro del if
 
 
 def vapid_public():
