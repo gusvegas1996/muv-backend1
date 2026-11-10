@@ -1,0 +1,2 @@
+# Unica dependencia (opcional pero necesaria para notificaciones push): 
+cryptography>=42
