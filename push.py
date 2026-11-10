@@ -44,8 +44,11 @@ def vapid_public():
 
 
 def available():
-    return bool(webpush.AVAILABLE and CRYPTO)
-
+    try:
+        import webpush
+        return True
+    except ImportError:
+        return False
 
 def send(user_id, title, body, url=None, tag=None, data=None):
     """Encola una notificacion para todos los dispositivos de un usuario."""
